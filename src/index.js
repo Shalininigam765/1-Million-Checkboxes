@@ -5,9 +5,8 @@ import express from 'express';
 import { Server } from 'socket.io';
 
 import {publisher, subscriber, redis} from "./redis-connection.js";
-import { channel } from 'node:diagnostics_channel';
-import { error } from 'node:console';
-
+import router from './routes/auth.routes.js';
+import { verifyToken } from './middleware/auth.middleware.js';
 
 async function main() {
 
@@ -17,6 +16,9 @@ async function main() {
 
     const io = new Server();
     io.attach(server)
+
+    app.use(express.json());
+    app.use('/api/auth', router);
 
     await subscriber.subscribe('internal-service:checkbox:change');
     subscriber.on('message', (channel, message) => {
@@ -40,6 +42,11 @@ async function main() {
         
         socket.on('client:checkbox:changed', async (data) => {
             console.log(`[Socket:${socket.id}]:client:checkbox:changed`, data)
+
+            const user = verifyToken(data.token);  
+            if (!user) {
+                return socket.emit('server:error', { error: 'Unauthorized' });
+            }
 
             const lastOperationTime = await redis.get(`rate-limiting:${socket.id}`)
             if(lastOperationTime){
@@ -71,6 +78,14 @@ async function main() {
 
     app.get('/health', (req, res) => res.json({ healthy: true}))
     app.use(express.static(path.resolve('./public')))
+
+    app.get('/', (req, res) => {
+        res.sendFile(path.resolve('./public/index.html'));
+    });
+
+    app.get('/login', (req, res) => {
+        res.sendFile(path.resolve('./public/login.html'));
+    });
 
     app.get('/checkboxes', async (req, res) => {
         const existingState = await redis.get(CHECKBOX_STATE_key)

@@ -11,10 +11,9 @@ export const subscriber = new Redis({
 });*/
 
 function createRedisConnection(){
-    return new Redis({
-    host: 'localhost',
-    port: 6379
-    })
+    const client = new Redis({ host: 'localhost', port: 6379 });
+    client.on('error', (err) => console.error('[Redis] Connection error:', err.message));
+    return client;
 }
 
 export const redis = createRedisConnection()
