@@ -49,3 +49,9 @@ npm start
 ```
 ## YouTube link
 [Youtube Demo link](https://youtu.be/3mxmI--2WKk)
+
+# Login method
+* i used hardcode username and password.
+* username = "admin"
+* password = "123"
+  
